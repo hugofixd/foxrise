@@ -1,3 +1,43 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
-const {admin}=require('../utils/helpers');
-module.exports={data:new SlashCommandBuilder().setName('automod').setDescription('Configura automod').setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild).addSubcommand(s=>s.setName('enable').setDescription('Activa')).addSubcommand(s=>s.setName('disable').setDescription('Desactiva')).addSubcommand(s=>s.setName('invites').setDescription('Bloquear invitaciones').addBooleanOption(o=>o.setName('enabled').setDescription('Activo').setRequired(true))),async execute(i,{db})=>{if(!admin(i))return i.reply({content:'Sin permisos.',ephemeral:true});const c=db.get(i.guildId,'automod',{}),s=i.options.getSubcommand();if(s==='enable')c.enabled=true;if(s==='disable')c.enabled=false;if(s==='invites')c.invites=i.options.getBoolean('enabled');db.set(i.guildId,'automod',c);return i.reply('Automod actualizado.');}};
+const { admin } = require('../utils/helpers');
+
+const data = new SlashCommandBuilder()
+  .setName('automod')
+  .setDescription('Configura el automod de FOXRISE')
+  .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+  .addSubcommand(subcommand => subcommand
+    .setName('enable')
+    .setDescription('Activa el automod'))
+  .addSubcommand(subcommand => subcommand
+    .setName('disable')
+    .setDescription('Desactiva el automod'))
+  .addSubcommand(subcommand => subcommand
+    .setName('invites')
+    .setDescription('Configura el bloqueo de invitaciones de Discord')
+    .addBooleanOption(option => option
+      .setName('enabled')
+      .setDescription('Bloquear invitaciones')
+      .setRequired(true)));
+
+async function execute(interaction, { db }) {
+  if (!admin(interaction)) {
+    return interaction.reply({ content: 'Necesitas permiso para gestionar el servidor.', ephemeral: true });
+  }
+
+  const settings = db.get(interaction.guildId, 'automod', {});
+  const subcommand = interaction.options.getSubcommand();
+
+  if (subcommand === 'enable') settings.enabled = true;
+  if (subcommand === 'disable') settings.enabled = false;
+  if (subcommand === 'invites') settings.invites = interaction.options.getBoolean('enabled');
+
+  db.set(interaction.guildId, 'automod', settings);
+  db.log(interaction.guildId, 'configuration', 'automod_updated', { subcommand, settings });
+
+  return interaction.reply({
+    content: `Automod actualizado: ${JSON.stringify(settings)}`,
+    ephemeral: true
+  });
+}
+
+module.exports = { data, execute };
