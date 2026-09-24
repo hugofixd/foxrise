@@ -1,38 +1,47 @@
 # 🦊 FOXRISE
 
-Bot modular y persistente para administración de servidores Discord, construido con Node.js, discord.js v14 y SQLite.
+Bot de Discord modular con Node.js 20, discord.js v14, SQLite persistente y health check HTTP.
 
-## Instalación
+## Railway: configuración mínima
 
-1. Requiere Node.js 20+ y un bot creado en [Discord Developer Portal](https://discord.com/developers/applications).
-2. Copia `.env.example` a `.env` y completa `DISCORD_TOKEN` y `CLIENT_ID`. `GUILD_ID` es opcional para registrar comandos instantáneamente en un servidor durante desarrollo.
-3. Instala y registra comandos:
+En Railway crea estas variables, una por una:
+
+```text
+DISCORD_TOKEN=el token del bot de Discord
+CLIENT_ID=el Application ID de Discord
+GUILD_ID=el ID del servidor (recomendado)
+DATABASE_PATH=/app/data/foxrise.sqlite
+```
+
+Para `npm start`, la única variable imprescindible es `DISCORD_TOKEN`. `CLIENT_ID` solo se necesita para `npm run deploy`.
+
+Añade un volumen Railway montado en `/app/data` para conservar SQLite. El repositorio incluye `Dockerfile`; Railway lo usará automáticamente en el siguiente deploy. El comando de inicio es `npm start`.
+
+Si el log muestra el texto antiguo `Faltan DISCORD_TOKEN o CLIENT_ID en .env`, Railway está usando un deployment anterior. Selecciona el repositorio `hugofixd/foxrise`, rama `main`, y despliega el commit más reciente. El código actual no contiene ese mensaje.
+
+## Local
 
 ```bash
+cp .env.example .env
 npm install
 npm run deploy
 npm start
 ```
 
-En Railway: crea un servicio desde este repositorio, configura las variables de `.env`, usa el comando `npm start` y añade un volumen persistente montado en `/app/data` (usa `DATABASE_PATH=/app/data/foxrise.sqlite`). El endpoint `/health` responde JSON para health checks.
+El health check está en `/health`. En Railway genera un dominio público solo si necesitas consultar ese endpoint; el bot no necesita una URL para conectarse a Discord.
 
-## Permisos e intents
+## Discord Developer Portal
 
-Invita el bot con `bot` y `applications.commands`. Para la funcionalidad completa habilita en Developer Portal **Server Members Intent**, **Message Content Intent** y **Presence Intent**. Permisos recomendados: Manage Channels, Manage Roles, Manage Messages, Moderate Members, Kick/Ban Members, View Audit Log, Send Messages, Embed Links, Attach Files y Read Message History. FOXRISE nunca contiene tokens ni claves en el código.
+Activa Server Members Intent, Message Content Intent y Presence Intent. Invita FOXRISE con los scopes `bot` y `applications.commands`, otorgando los permisos necesarios para las funciones que uses.
 
-## Configuración inicial
+No subas `.env`, tokens, la base SQLite ni `node_modules` a GitHub. Todos están excluidos mediante `.gitignore` y `.dockerignore`.
 
-Usa `/config view`, `/config logs`, `/welcome setup`, `/ticket setup`, `/autorole add` y `/identity` según tus necesidades. Los ajustes son independientes por servidor y se guardan en SQLite; crear la base de datos no requiere un servicio externo.
+## Arquitectura
 
-## Incluido
-
-- Slash commands modulares para identidad, tickets, bienvenida/despedida, moderación, automod, seguridad, autoroles, logs, niveles, economía, sorteos, encuestas, embeds, aplicaciones, reportes, sugerencias, invitaciones y utilidades.
-- Botones y modals funcionales para paneles de tickets, rating, reportes, sugerencias y sorteos.
-- Cooldowns, permisos, validación de entradas, serialización de acciones sensibles y manejo centralizado de errores.
-- Transcripts HTML de tickets y registro configurable por categoría.
-
-Discord no permite cambiar el nombre, avatar, banner o descripción de una aplicación mediante las APIs normales del bot. `/identity` muestra los valores reales disponibles; los comandos de identidad modifican exclusivamente presencia y configuración local, y explican esa limitación en lugar de fingir éxito.
-
-## Estructura
-
-`index.js` arranca el cliente y HTTP; `deploy-commands.js` registra comandos; `src/commands` contiene comandos; `src/events` eventos; `src/systems` subsistemas; `src/database` persistencia; `src/utils` utilidades.
+- `index.js`: arranque seguro, cliente Discord y HTTP.
+- `deploy-commands.js`: registro de comandos.
+- `src/commands`: comandos slash.
+- `src/events`: eventos Discord.
+- `src/systems`: tickets y sistemas interactivos.
+- `src/database`: SQLite persistente.
+- `src/utils`: utilidades y transcripts.

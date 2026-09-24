@@ -1,0 +1,11 @@
+node_modules
+data
+.env
+.git
+.gitignore
+README.md
+RAILWAY.md
+transcripts
+logs
+*.sqlite
+*.sqlite-*
