@@ -1,3 +1,22 @@
-const { SlashCommandBuilder, PermissionFlagsBits, ActivityType } = require('discord.js');
-const {admin}=require('../utils/helpers');
-module.exports={data:new SlashCommandBuilder().setName('identity').setDescription('Gestiona la identidad y presencia de FOXRISE').addSubcommand(s=>s.setName('set').setDescription('Establece presencia').addStringOption(o=>o.setName('type').setDescription('Tipo').setRequired(true).addChoices({name:'Playing',value:'Playing'},{name:'Watching',value:'Watching'},{name:'Listening',value:'Listening'},{name:'Competing',value:'Competing'})).addStringOption(o=>o.setName('text').setDescription('Texto').setRequired(true)).addStringOption(o=>o.setName('status').setDescription('online/idle/dnd/invisible'))).addSubcommand(s=>s.setName('view').setDescription('Ver identidad')),async execute(i,{db,client})=>{if(!admin(i))return i.reply({content:'Necesitas gestionar el servidor.',ephemeral:true});if(i.options.getSubcommand()==='view')return i.reply({content:'FOXRISE puede cambiar su presencia. El nombre, avatar, banner y descripción de la aplicación solo se cambian desde Developer Portal; Discord no expone esa edición a un bot en runtime.',ephemeral:true});const type=i.options.getString('type'),text=i.options.getString('text'),map={Playing:ActivityType.Playing,Watching:ActivityType.Watching,Listening:ActivityType.Listening,Competing:ActivityType.Competing};client.user.setPresence({activities:[{name:text,type:map[type]}],status:i.options.getString('status')||'online'});db.set(i.guildId,'identity',{type,text,status:i.options.getString('status')||'online'});db.log(i.guildId,'identity','presence_updated',{type,text});return i.reply('Presencia de FOXRISE actualizada.')}};
+const { SlashCommandBuilder, ActivityType } = require('discord.js');
+const { admin } = require('../utils/helpers');
+
+const data = new SlashCommandBuilder()
+  .setName('identity')
+  .setDescription('Gestiona la presencia de FOXRISE')
+  .addSubcommand(s => s.setName('set').setDescription('Establece la presencia').addStringOption(o => o.setName('type').setDescription('Tipo').setRequired(true).addChoices({ name: 'Playing', value: 'Playing' }, { name: 'Watching', value: 'Watching' }, { name: 'Listening', value: 'Listening' }, { name: 'Competing', value: 'Competing' })).addStringOption(o => o.setName('text').setDescription('Texto').setRequired(true)).addStringOption(o => o.setName('status').setDescription('online, idle, dnd o invisible')))
+  .addSubcommand(s => s.setName('view').setDescription('Ver la identidad'));
+
+async function execute(interaction, { db, client }) {
+  if (!admin(interaction)) return interaction.reply({ content: 'Necesitas gestionar el servidor.', ephemeral: true });
+  if (interaction.options.getSubcommand() === 'view') return interaction.reply({ content: 'FOXRISE puede cambiar presencia. El nombre, avatar, banner y descripción de la aplicación se cambian desde Discord Developer Portal, no mediante la API normal del bot.', ephemeral: true });
+  const type = interaction.options.getString('type', true);
+  const text = interaction.options.getString('text', true);
+  const types = { Playing: ActivityType.Playing, Watching: ActivityType.Watching, Listening: ActivityType.Listening, Competing: ActivityType.Competing };
+  client.user.setPresence({ activities: [{ name: text, type: types[type] }], status: interaction.options.getString('status') || 'online' });
+  db.set(interaction.guildId, 'identity', { type, text, status: interaction.options.getString('status') || 'online' });
+  db.log(interaction.guildId, 'identity', 'presence_updated', { type, text });
+  return interaction.reply('Presencia de FOXRISE actualizada.');
+}
+
+module.exports = { data, execute };
