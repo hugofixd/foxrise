@@ -1,9 +1,12 @@
-require('dotenv').config();
+require('dotenv').config({ quiet: true });
 const { REST, Routes } = require('discord.js');
 const fs = require('node:fs');
 const path = require('node:path');
+const token = String(process.env.DISCORD_TOKEN || '').trim();
+const clientId = String(process.env.CLIENT_ID || '').trim();
+if (!token || !clientId) throw new Error('Para registrar comandos necesitas DISCORD_TOKEN y CLIENT_ID en .env o Railway Variables.');
 const commands = [];
 for (const file of fs.readdirSync(path.join(__dirname, 'src/commands')).filter(f => f.endsWith('.js'))) commands.push(require(path.join(__dirname, 'src/commands', file)).data.toJSON());
-if (!process.env.DISCORD_TOKEN || !process.env.CLIENT_ID) throw new Error('Faltan DISCORD_TOKEN o CLIENT_ID');
-const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
-(async () => { const route = process.env.GUILD_ID ? Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID) : Routes.applicationCommands(process.env.CLIENT_ID); await rest.put(route, { body: commands }); console.log(`FOXRISE: ${commands.length} comandos registrados`); })().catch(console.error);
+const rest = new REST({ version: '10' }).setToken(token);
+const route = process.env.GUILD_ID?.trim() ? Routes.applicationGuildCommands(clientId, process.env.GUILD_ID.trim()) : Routes.applicationCommands(clientId);
+rest.put(route, { body: commands }).then(() => console.log(`FOXRISE: ${commands.length} comandos registrados`)).catch(error => { console.error('[FOXRISE] Error registrando comandos:', error.message); process.exitCode = 1; });
